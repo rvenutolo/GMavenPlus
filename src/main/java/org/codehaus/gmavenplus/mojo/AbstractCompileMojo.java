@@ -39,6 +39,11 @@ import static org.codehaus.gmavenplus.util.ReflectionUtils.*;
 public abstract class AbstractCompileMojo extends AbstractGroovySourcesMojo {
 
     /**
+     * Groovy 2.5.0 beta-1 version.
+     */
+    protected static final Version GROOVY_2_5_0_BETA1 = new Version(2, 5, 0, "beta-1");
+
+    /**
      * Groovy 2.3.3 version.
      */
     protected static final Version GROOVY_2_3_3 = new Version(2, 3, 3);
@@ -155,6 +160,14 @@ public abstract class AbstractCompileMojo extends AbstractGroovySourcesMojo {
      * @parameter property="configScript"
      */
     protected File configScript;
+
+    /**
+     * Generate metadata for reflection on method parameter names using the functionality provided by JEP 118
+     * (requires Java 8 or greater and Groovy 2.5.0-beta-1 or greater)
+     *
+     * @parameter property="parameters" default-value="false"
+     */
+    protected boolean parameters;
 
     /**
      * Performs compilation of compile mojos.
@@ -298,6 +311,17 @@ public abstract class AbstractCompileMojo extends AbstractGroovySourcesMojo {
                 }
             } else {
                 getLog().warn("Requested to use invokeDynamic, but your Groovy version (" + classWrangler.getGroovyVersionString() + ") doesn't support it (must be " + GROOVY_2_0_0_BETA3 + " or newer).  Ignoring invokeDynamic parameter.");
+            }
+        }
+        if (parameters) {
+            if (groovyAtLeast(GROOVY_2_5_0_BETA1)) {
+                if (isJavaSupportParameters()) {
+                    invokeMethod(findMethod(compilerConfigurationClass, "setParameters", boolean.class), compilerConfiguration, parameters);
+                } else {
+                    getLog().warn("Requested to use to use parameters, but your Java version (" + getJavaVersionString() + ") doesn't support it.  Ignoring parameters parameter.");
+                }
+            } else {
+                getLog().warn("Requested to use parameters, but your Groovy version (" + classWrangler.getGroovyVersionString() + ") doesn't support it (must be " + GROOVY_2_5_0_BETA1 + " or newer).  Ignoring parameters parameter.");
             }
         }
 
